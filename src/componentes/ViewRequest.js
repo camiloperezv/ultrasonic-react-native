@@ -2,15 +2,23 @@ import React, { Component } from 'react';
 import { Text, View, ListView } from 'react-native';
 import axios from 'axios';
 
-import { Input, Button, Card, CardSection } from './common';
+import { Input, Button, Card, CardSection, Alert } from './common';
 
 class ViewRequest extends Component {
-  state = { address: '10.46.129.1', errorMessage: '', timer: false, distance: [] };
+  state = { 
+    // address: '10.46.129.1', 
+    address: '10.0.1.13',
+    alertAt: 10,
+    errorMessage: '', 
+    timer: false, 
+    distance: [], 
+    alert: false 
+  };
   
   onButtonPressTimer() {
     const timer = setInterval(() => {
       this.sendRequest();
-    }, 1500);
+    }, 1000);
     this.setState({ timer });
   }
 
@@ -19,9 +27,19 @@ class ViewRequest extends Component {
     if (address === '') {
       return;
     }
-    axios.get(`http://${address}`)
-      .then(response => 
-        this.setState({ distance: [...this.state.distance, response.data] })
+    
+    axios.get(`http://${address}/api/v1/couch/get-pos`)
+      .then(response => {
+          // const distance = Math.floor(Math.random() * 20);
+          const distance = response.data;
+          if (distance <= this.state.alertAt) {
+            this.setState({ alert: true });
+          } else {
+            this.setState({ alert: false });
+          }
+          this.setState({ distance: [...this.state.distance, distance] });
+          this.listView.scrollToEnd();
+        }
       )
       .catch(err => console.error(err));
   }
@@ -34,7 +52,11 @@ class ViewRequest extends Component {
   clearDistance() {
     this.setState({ distance: [] });
   }
-
+  renderAlert() {
+    if (this.state.alert === true) {
+      return (<Alert title={'STOP'} text={'in the limit'} type={'danger'} />);
+    }
+  }
   renderButtonTimer() {
     if (this.state.timer !== false) {
       return (
@@ -44,7 +66,7 @@ class ViewRequest extends Component {
     }
     return (
       <Button onPress={this.onButtonPressTimer.bind(this)}>
-        Request every 1.5 Seconds
+        Request every 1 Second
       </Button>); 
   }
 
@@ -56,6 +78,7 @@ class ViewRequest extends Component {
       style={{ maxHeight: 200 }}
       dataSource={dataSource}
       enableEmptySections
+      ref={listView => { this.listView = listView; }}
       renderRow={(data) => <View><Text>{data} cm</Text></View>}
     />);
   }
@@ -67,7 +90,7 @@ class ViewRequest extends Component {
         <CardSection>
           <Input 
             label={'Address'} 
-            placeholder={'10.42.92.1/api/v1/get-position'}
+            placeholder={'10.42.92.1'}
             value={this.state.address} 
             onChange={address => this.setState({ address })} 
           />
@@ -89,11 +112,21 @@ class ViewRequest extends Component {
           </Button>
         </CardSection>
 
-        <CardSection>
-          <Text>Distance</Text>
+        <CardSection>      
+          <Input 
+            label={'Alert At'} 
+            placeholder={'10'}
+            value={this.state.alertAt} 
+            onChange={alertAt => this.setState({ alertAt })} 
+          />
         </CardSection>
 
         <CardSection>
+          { this.renderAlert() }
+        </CardSection> 
+
+        <CardSection>
+          <Text>Distance {'\n'}</Text>
           {this.renderDistance()}
         </CardSection>
           
