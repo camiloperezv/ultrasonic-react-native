@@ -8,7 +8,7 @@ class ViewRequest extends Component {
   state = { 
     // address: '10.46.129.1', 
     address: '10.0.1.13',
-    alertAt: 10,
+    alertAt: '10',
     errorMessage: '', 
     timer: false, 
     distance: [], 
@@ -32,7 +32,7 @@ class ViewRequest extends Component {
       .then(response => {
           // const distance = Math.floor(Math.random() * 20);
           const distance = response.data;
-          if (distance <= this.state.alertAt) {
+          if (Number(distance) <= Number(this.state.alertAt)) {
             this.setState({ alert: true });
           } else {
             this.setState({ alert: false });
